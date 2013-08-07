@@ -447,6 +447,8 @@ Pears      10
 ;
 run;
 
+
+
 /*Now we will concatenate*/
 data work.ConcatPrices;
 	set work.Prices work.MorePrices;
@@ -454,7 +456,27 @@ run;
 
 /*append does the same thing as concatenate, except it adds to the */
 /*data set selected with the base=option */
+/*also, it is more sensative than concatenate:*/
+/*concatenate will fail if you have different data types on the */
+/*same field, but concatenate doesn't mind */
+/*will fail (see example below).  Concatenate doesn't mind*/
 proc append base=work.Prices data=work.MorePrices;
+run;
+
+data work.SlightlyDifferentPrices;
+   input Name $ 1-22 Price 24-25 Count;
+   datalines;
+Nut N Honey Cereal    10 5
+Honey Bunches of Oats 5  5
+;
+run;
+
+/*concatenate will combine; append will not */
+/*See the log for details*/
+data work.ConcatMoreFlexibleThanAppend;
+	set work.Prices work.SlightlyDifferentPrices;
+run;
+proc append base=work.Prices data=work.SlightlyDifferentPrices;
 run;
 
 data work.DifferentPrices;
@@ -478,5 +500,214 @@ run;
 /*since count doesn't exist in Prices, it is dropped from the resulting output */ 
 /*longer names are truncated*/
 proc append base=work.Prices data=work.LongerPrices FORCE;
+run;
+
+/*recreating data for interleaving*/
+data work.Prices;
+   input Name $ 1-11 Price;
+   datalines;
+Pickles    20
+Apples     15
+Apples     6
+Toothpaste 2
+Cigarettes 5
+Beer       10
+Chicken    5
+Diapers    5
+Sprats     5
+Sprats     5
+;
+run;
+
+/*interleaving*/
+/*must sort on our BY variable*/
+proc sort data=work.Prices;
+	by name;
+run;
+proc sort data=work.MorePrices;
+	by name;
+run;
+
+data work.InterlevPrices;
+	set work.Prices work.MorePrices;
+	by name;
+run;
+
+/*match-merge*/
+/*if we used set instead of merge, we would interleave*/
+/*notice the missing values in the resulting data set*/
+/*if the BY variable name is missing in one or the other data*/
+/*set, then the values from that data set are missing*/
+data work.PricesShoppingListMerge;
+	merge work.Prices work.ShoppingList;
+	by name;
+run;
+
+/*Renaming*/
+data work.Prices;
+   input Name $ 1-11 Price;
+   datalines;
+Pickles    20
+Apples     15
+Peaches     6
+;
+run;
+
+data work.MorePrices;
+   input Name $ 1-11 Price;
+   datalines;
+Pickles    2
+Apples     3
+Apples     4
+;
+run;
+proc sort data=work.Prices;
+	by name;
+run;
+proc sort data=work.MorePrices;
+	by name;
+run;
+/*Use the rename so that we can keep both sets of prices*/
+/*otherwise the price info from MorePrices would be overwritten*/
+data work.CombinedPrices;
+	merge 	work.Prices (rename=(Price=Price1))
+			work.MorePrices (rename=(Price=Price2));
+	by name;
+run;
+
+/*Notice that the above merge is basically the same as a SQL outer join*/
+/*Observations are included in the merged data set even if they are missing*/
+/*from one or the other data set*/
+/*If you want to do an inner join, selecting only if an observation*/
+/*is included in BOTH data sets, you can use the method below*/
+/*the in=VARNAME creates a variable that is true if data set*/
+/*contributed to the current observation.  In this example, */
+/*inPrices is 1 when there are values in Prices for the current value of Name*/
+/*and inMorePrices is 1 when there are values in MorePrices for the */
+/*current value of Name*/
+data work.CombinedPricesInBoth;
+	merge 	work.Prices (in=inPrices rename=(Price=Price1))
+			work.MorePrices (in=inMorePrices rename=(Price=Price2));
+	by name;
+	if inPrices and inMorePrices;
+run;
+
+/*Don't drop the variable like this if you need its value during*/
+/*iterations of the data step*/
+/*Look at the result and see the missing values*/
+data work.DoublePrices;
+	set work.Prices(drop=Price);
+	DoubledPrice = Price * 2;
+run;
+
+/*This will work since Price is only dropped at the conclusion of the*/
+/*data step*/
+data work.DoublePrices(drop=Price);
+	set work.Prices;
+	DoubledPrice = Price * 2;
+run;
+
+/* Code for Chapter 13 */
+data work.TextPrices;
+   input Name $ 1-11 TextPrice $;
+   datalines;
+Pickles    2
+Apples     3
+Apples     4
+;
+run;
+
+/*use the input function to convert Price from character to numeric*/
+/*the INput function needs an INfomrmat*/
+data work.NumericPrices;
+	set work.TextPrices;
+	AutoConvert = TextPrice * 2;
+	NumPrice = input(TextPrice,1.);
+run;
+
+/*Now convert back to text*/
+data work.ReTextPrices;
+	set work.NumericPrices;
+	ReTextPrice = put(NumPrice,1.);
+run;
+
+data work.person;
+   input name $ HireDate MMDDYY6.;
+   datalines;
+John 101512
+Mary 101599
+Tom 011490
+;
+run;
+
+/*Date functions*/
+/*INTCK can give the days, months, years or quarters*/
+/*between dates*/
+data work.person;
+	set work.Person;
+	Date1 = mdy(8,7,2013);
+	Date2 = today();
+	Experience = Date2 - HireDate;
+	YearsOfWork = INTCK('Year',HireDate,Date2);
+	Time = time();
+run;
+
+/*Format dates and select observations*/
+/*Can't use subsetting if in proc print*/
+/*instead we use a where statement*/
+proc print data=work.person;
+	format HireDate MMDDYY10. Date1 MMDDYY8. Date2 Date9.;
+	where year(HireDate)=1990;
+run;
+
+/*String Functions*/
+data work.person;
+   input name $ 1-32;
+   datalines;
+SMiTh, John A.
+Halim, Lukas
+Goldberg, Lukas
+;
+run;
+
+/*PropCase capitalizes first letters*/
+/*Scan divides the string by specified (or default) delimiter and returns the specified nth word*/
+/*Index finds the first occurrence of the specified string.  Find is a similar*/
+data work.person(drop=FirstInitial Name);
+	set work.person;
+	LastName = PropCase(scan(name,1));
+	FirstInitial = substr(scan(name,2),1,1);
+	ReNamed = CatX(" ","Mr.",FirstInitial,"A.",LastName);
+	Location = Index(Name,"Lukas");
+	Location2 = Find(Name,"Lukas");
+run;
+
+data work.ThreeCols;
+	input x1 x2 x3;
+	datalines;
+1.111 4.777 8.222
+;
+run;
+
+/*The Round function rounds to the specified the precision.      */
+/*  Default is nearest .01, but here we round to the nearest .02 */
+/*Int strips off the decimals*/
+data ThreeCols;
+	set work.ThreeCols;
+	SummedVal = sum(of x1-x3);
+	RoundedX1 = round(x1,.02);
+	IntX2 = Int(x2);
+run;
+
+/*Chapter 15 - ARRAYS*/
+data ThreeCols;
+	set ThreeCols;
+	Array Predictors{*} x1 x2 x3;
+	Array AnotherWay{*} _numeric_;
+	Array ThirdWay{*} _All_;
+	y = 0;
+	do i = 1 to dim(Predictors);
+		y = y + Predictors{i};
+	end;
 run;
 
