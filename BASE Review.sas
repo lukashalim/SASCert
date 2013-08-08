@@ -711,3 +711,277 @@ data ThreeCols;
 	end;
 run;
 
+data TwoWeeks;
+	input x1 x2 x3 x4 x5 x6 x7 x8 x9 x10;
+	datalines;
+8 8 9 9 8 8 9 8 8 0
+8 8 9 7 7 8 7 9 8 8
+;
+run;
+
+/*In Hours{2,5}, the 2 represents 2 rows, while the 5*/
+/*represents 5 rows*/
+/*
+Table fills up one row at a time, from left to right.
+Rows are added from top to bottom
+Ex: 	x1	x2	x3	x4	x5
+		x6	x7	x8	x9	x10
+*/
+/*When the code has an "output" command, you override the usual*/
+/*behavior - outputing at the end of each iteration of the data*/
+/*step.  In this case, output occurs at the end of each row.   */
+data TwoWeeks(drop=i j);
+	set TwoWeeks;
+	Array Hours{2,5} x1-x10;
+	array AverageHrs{5} _temporary_ (8 8 8 8 7);
+	do i = 1 to 2;
+		Time = 0;
+		Comparsion = 0;
+		do j = 1 to 5;
+			Time = Time + Hours{i,j};
+			Comparision = Comparison + abs(Hours{i,j} - AverageHours{j});
+		end;
+		Week = i;
+		output;
+	end;
+run;
+
+/*Chapter 16 Code*/
+/*SAS sometimes uses its own specialized vocabulary when there are*/
+/*perfectly suitable terms in common use that would be more easily*/
+/*understandable.  In this case, SAS calls the data "Free format"*/
+/*when most people would call it delimited data.*/
+/*
+Fixed Width
+	Column (standard data)
+	Formatted (standard and non-standard)
+Free-Form (normally called delimited data)
+	List Input
+*/
+
+/* List style of input */
+data work.Employee_Free_Form; 
+   infile 'C:\Users\LukasHalim\Documents\GitHub\SASCert\employee_free_form.txt' dlm=','; 
+   input Name $ Age Country $ Date1 Bonus Date2; 
+run; 
+proc print data=work.Employee_Free_Form; 
+run;
+
+/*Same as above, but using a file that has blanks rather than commas*/
+/*the default delimiter is blank, so no need to use the dsm option*/
+/*Notice that the Name values are truncated!!  By default, list input is only*/
+/*eight characters.*/
+data work.Employee_Free_Form; 
+   infile 'C:\Users\LukasHalim\Documents\GitHub\SASCert\emp_free_form_blanks.txt'; 
+   input Name $ Age Country $ Date1 Bonus Date2; 
+run; 
+proc print data=work.Employee_Free_Form; 
+run;
+
+/*fix the truncaction*/
+data work.Employee_Free_Form; 
+   infile 'C:\Users\LukasHalim\Documents\GitHub\SASCert\emp_free_form_blanks.txt'; 
+	length Name $ 11;
+	input Name $ Age Country $ Date1 Bonus Date2; 
+run; 
+proc print data=work.Employee_Free_Form; 
+run;
+
+data work.Employee_Free_Form; 
+   	infile 'C:\Users\LukasHalim\Documents\GitHub\SASCert\emp_free_form_blanks.txt'; 
+	input Name $ 11. Age Country $ Date1 Bonus Date2; 
+run; 
+proc print data=work.Employee_Free_Form; 
+run;
+
+/*Example of data file with missing values at the end of a line*/
+/*See the note in the log:*/
+/*NOTE: SAS went to a new line when INPUT statement reached past the end of a line.*/
+data work.Employee_Free_Form; 
+   infile 'C:\Users\LukasHalim\Documents\GitHub\SASCert\emp_missover.txt'; 
+   input Name $ Age Country $ Date1 Bonus Date2; 
+run; 
+proc print data=work.Employee_Free_Form; 
+run;
+
+/*Now do the same, but use the MISSOVER option*/
+/*Missover only works if the missing data is at the END of the line*/
+data work.Employee_Free_Form; 
+   infile 'C:\Users\LukasHalim\Documents\GitHub\SASCert\emp_missover.txt' missover; 
+   input Name $ Age Country $ Date1 Bonus Date2; 
+run; 
+proc print data=work.Employee_Free_Form; 
+run;
+
+/*Example of data file with missing values in the middle of a line*/
+/*Notice that SAS doesn't understand the two commas in the data set*/
+/*represent a missing value.  All Country, Date1, Bonus, and Date2 are all*/
+/*shifted to the left.  SAS tries to put "USA"in the age field, but since */
+/*USA is text and Age is numeric, the value shows as missing*/
+data work.Employee_Free_Form; 
+   infile 'C:\Users\LukasHalim\Documents\GitHub\SASCert\emp_dsd.txt' dlm=','; 
+   input Name $ Age Country $ Date1 Bonus Date2; 
+run; 
+proc print data=work.Employee_Free_Form; 
+run;
+
+/*Fix this with the dsd option.  DSD means that SAS will impute a missing value*/
+/*when it finds repeated delimiters.*/
+data work.Employee_Free_Form; 
+   infile 'C:\Users\LukasHalim\Documents\GitHub\SASCert\emp_dsd.txt' dsd; 
+   input Name $ Age Country $ Date1 Bonus Date2; 
+run; 
+proc print data=work.Employee_Free_Form; 
+run;
+
+/*The file emp_embedded_blanks uses double blanks "  " as delimiters.*/
+/*Single blanks are allowed within a field, so "George Blank" should*/
+/*be a single value, while "George  Blank" would be treated as two different*/
+/*values.  */
+/*However, embedded blanks won't work - they are treated as delimiters*/
+data work.Employee_Free_Form; 
+   	infile 'C:\Users\LukasHalim\Documents\GitHub\SASCert\emp_embedded_blanks.txt'; 
+	length Name $ 12;
+	input Name $ Age Country $ Date1 Bonus Date2; 
+run; 
+proc print data=work.Employee_Free_Form; 
+run;
+
+/*Now we use the ampersand*/
+data work.Employee_Free_Form; 
+   	infile 'C:\Users\LukasHalim\Documents\GitHub\SASCert\emp_embedded_blanks.txt'; 
+	length Name $ 12;
+	input Name & Age Country $ Date1 Bonus Date2; 
+run; 
+proc print data=work.Employee_Free_Form; 
+run;
+
+/*This also works: variable-name ampersand informat*/
+data work.Employee_Free_Form; 
+   	infile 'C:\Users\LukasHalim\Documents\GitHub\SASCert\emp_embedded_blanks.txt'; 
+	input Name & $12. Age Country $ Date1 Bonus Date2; 
+run; 
+proc print data=work.Employee_Free_Form; 
+run;
+
+/*How about nonstandard data, such as $250,000?*/
+data work.Employee_Free_Form; 
+   	infile 'C:\Users\LukasHalim\Documents\GitHub\SASCert\employee_nonStandard.txt'; 
+	input Name  & $12. Salary; 
+run; 
+proc print data=work.Employee_Free_Form; 
+run;
+
+/*The output data set was missing salary info*/
+/*how about adding an informat?*/
+data work.Employee_Free_Form; 
+   	infile 'C:\Users\LukasHalim\Documents\GitHub\SASCert\employee_nonStandard.txt'; 
+	input Name  & $12. Salary dollar.; 
+run; 
+proc print data=work.Employee_Free_Form; 
+run;
+
+/*The above code also failed*/
+/*we need a colon to read nonstandard data (comma, currency)*/
+/*and data that is longer than eight characters*/
+data work.Employee_Free_Form; 
+   	infile 'C:\Users\LukasHalim\Documents\GitHub\SASCert\employee_nonStandard.txt'; 
+	input 	Name & $12.
+			Salary : Comma.; 
+run; 
+proc print data=work.Employee_Free_Form; 
+run;
+
+/*Now let's create free-format (delimited) data*/
+data work.person;
+   input name $ age salary HireDate MMDDYY6.;
+   datalines;
+John 23 1245 101513
+Mary 37 40000 101599
+Tom 53 60180 011490
+;
+run;
+
+/*Creating a delimited file*/
+data _null_; 
+   set work.person; 
+   file 'C:\Users\LukasHalim\Documents\GitHub\SASCert\person_delimited.txt'; 
+   put name $ age salary HireDate MMDDYY6.;
+run;
+
+/*CSV*/
+data _null_; 
+   set work.person; 
+   file 'C:\Users\LukasHalim\Documents\GitHub\SASCert\person_delimited.csv' dlm=','; 
+   put name $ age salary HireDate MMDDYY6.;
+run;
+
+/*CSV with commas within fields*/
+/*Open the resulting file - you will see that there is an extra column*/
+/*because the commas in the salary field are confused with delimiters!*/
+/*we need to prevent this with the DSD option*/
+data _null_; 
+   set work.person; 
+   file 'C:\Users\LukasHalim\Documents\GitHub\SASCert\person_comma.csv' dlm=','; 
+   put name $ age salary : comma6. HireDate MMDDYY6.;
+run;
+
+/*Open the resulting file and you will see that the commas in the */
+/*salary field are handled correctly*/
+data _null_; 
+   set work.person; 
+   file 'C:\Users\LukasHalim\Documents\GitHub\SASCert\person_dsd.csv' dsd; 
+   put name $ age salary : comma6. HireDate MMDDYY6.;
+run;
+
+/*Chapter 18 - single input observation/row => multiple output observations/rows */
+
+/*The double @@ prevents SAS from moving to the next row when it*/
+/*reaches the end of the data step.*/
+/*It will only go to the next row when it runs out of data on the */
+/*current row.*/
+data work.repeat; 
+   infile 'C:\Users\LukasHalim\Documents\GitHub\SASCert\repeat.txt';
+   input Country $ Numeric @@; 
+run;
+proc print data=work.repeat;
+run;
+
+/*The single @ prevents SAS from moving to the next row after each input*/
+data work.repeat; 
+	infile 'C:\Users\LukasHalim\Documents\GitHub\SASCert\repeat.txt';
+	do i = 1 to 3;
+		input Country $ Numeric @; 
+		output;
+	end;
+run;
+proc print data=work.repeat;
+run;
+
+/*This is confusing, but the code here handles the case when*/
+/*there are variable number of repeating fields within an observation*/
+/*
+Data:
+	USA 1 2 3 
+	AUS 22 
+	AUS 33 33 33 33 33 
+*/
+data work.repeat; 
+	infile 'C:\Users\LukasHalim\Documents\GitHub\SASCert\repeat_variable.txt' missover;
+	input Country $ Numeric @; 
+	do while(Numeric ne .);
+		output;
+		input Numeric @; 
+	end;
+run;
+proc print data=work.repeat;
+run;
+
+/*Do loops do not need to incriment by 1.*/
+/*Here, we incriment by 2 instead.*/
+data work.DoBy;
+	do  i = 1 to 10 by 2;
+		output;
+	end;
+run;
+
