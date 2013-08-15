@@ -35,6 +35,7 @@ run;
 
 /*the filename statement creates a fileref */
 /*similar to how a libname statement creates a libref*/
+/*In the data step, an infile statement will use the fileref as input*/
 filename EMPLOYEE 'C:\Users\LukasHalim\Documents\GitHub\SASCert\employee.txt';
 data SASCert.Employee;
 	infile EMPLOYEE;

@@ -27,12 +27,21 @@ proc format;
  	'USA'='United States';	
 run;
 
-/*using the data set we loaded in the chapter 6 code*/
-data base.Employee;
-	set base.Employee;
+/*Create the dataset SASCert.Employee */
+filename EMPLOYEE 'C:\Users\LukasHalim\Documents\GitHub\SASCert\employee.txt';
+data SASCert.Employee;
+	infile EMPLOYEE;
+	input name $ age country $ baseSalary bonus hiredate;
+run;
+/*Apply the format to this data set*/
+data SasCert.Employee;
+	set SasCert.Employee;
 	format country $countryfmt.;
 run;
-
-proc print data=base.employee;
+/*print*/
+proc print data=SasCert.employee;
+run;
+/*print with temporary format*/
+proc print data=SasCert.employee;
 	format country $altcountryfmt.;
 run;

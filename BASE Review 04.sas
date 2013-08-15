@@ -29,9 +29,14 @@ PROC PRINT data=work.person noobs;
 run;
 
 /*Make "Name" the id column using ID*/
-PROC PRINT data=work.person noobs;
+PROC PRINT data=work.person;
 	id name; 
 	var age;
+run;
+
+/*This does not work - we forgot something*/
+PROC PRINT data=sashelp.zipcode  obs=10 ;
+	var state zip;
 run;
 
 /*Only print the first 10 observations*/
@@ -65,6 +70,10 @@ footnote2 'My Modified footnote2';
 proc print data=work.person;
 run;
 
+/*Reset titles and footnotes*/
+title;
+footnote;
+
 /*display the total salary using sum*/
 proc print data=work.person;
 	var name;
@@ -73,7 +82,7 @@ run;
 
 /*assign a temporary label*/
 /*Format the date field*/
-proc print data=work.person;
+proc print data=work.person noobs;
 	label name='Employee Name';
 	format salary 5. HireDate MMDDYY.;
 run;
@@ -86,10 +95,10 @@ proc print data=work.person;
 	format salary dollar5. HireDate MMDDYY.;
 run;
 
-/*With a width of 6, we can show five-figure salaries with the dollar sign*/
+/*With a width of 7, we can show five-figure salaries with the dollar sign and comma*/
 proc print data=work.person;
 	label name='Employee Name';
-	format salary dollar6. HireDate MMDDYY.;
+	format salary dollar7. HireDate MMDDYY.;
 run;
 
 /*Similar problem with using the 5.2 format - the salaries are 5 digits, */
@@ -110,18 +119,20 @@ proc print data=work.person;
 	format name $4. salary 8.2 HireDate DATE7.;
 run;
 
-/*What we just did was a temporary label.  Now we want to set up a permenant label */
+/*What we just did was a temporary label.  Now we want to set up a permanant label */
 data work.person;
 	set work.person;
 	label name='Employee Name';
 	format name $4. salary dollar9.2 HireDate DATE7.;
 run;
 
+/*Now these formats are used automatically wit proc print*/
 proc print data=work.person label;
 run;
 
 /*We need to make the width 9:*/
 /*  5 slots for digits to the left of the decimal, with one comma*/
+/*	1 slot for the comma*/
 /*  1 slot for the decimal*/
 /*  2 slots to the right of the decimal*/
 proc print data=work.person;
