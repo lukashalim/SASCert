@@ -1,11 +1,11 @@
 /*Code Related to Chapter 2*/
 
 /*Display metadata on all tables in library, supressing details using NODS*/
-PROC CONTENTS DATA=sashelp._all_ NODS;
+PROC CONTENTS DATA=work._all_ NODS;
 RUN;
 
 /*Display metadata on all tables in library, with details*/
-PROC CONTENTS DATA=sashelp._all_;
+PROC CONTENTS DATA=work._all_;
 RUN;
 
 /*Display metadata for individual table*/
@@ -45,6 +45,11 @@ Liz 23 50000 011410
 ;
 run;
 
+/*We can also use proc datasets to get the descriptor portion*/
+PROC DATASETS;
+	contents DATA=work.person;
+run;
+
 /*don't show date stamp or page number*/
 ods listing;
 options nonumber nodate; 
@@ -70,3 +75,4 @@ ods listing;
 options date number firstobs=1 pagesize=15; 
 proc print data=work.person;
 run;
+

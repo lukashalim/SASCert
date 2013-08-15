@@ -41,6 +41,21 @@ run;
 proc print data=work.repeat;
 run;
 
+/*This shows reading data without the truncover option*/
+/*There is a note in the log that SAS went to a new line */
+/*when the input statement reached past the end of the line*/
+data scores;
+   infile 'C:\Users\LukasHalim\Documents\GitHub\SASCert\truncover.txt';
+   input TestNum 1-6;
+run;
+/*With the truncover option - SAS does not go to a new line*/
+/*but instead stops even though the lines are shorter than the expected 6 characters */
+data scores;
+   infile 'C:\Users\LukasHalim\Documents\GitHub\SASCert\truncover.txt' truncover;
+   input TestNum 1-6;
+run;
+
+
 /*Do loops do not need to incriment by 1.*/
 /*Here, we incriment by 2 instead.*/
 data work.DoBy;

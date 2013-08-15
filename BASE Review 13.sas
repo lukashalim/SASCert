@@ -108,3 +108,16 @@ data ThreeCols;
 	RoundedX1 = round(x1,.02);
 	IntX2 = Int(x2);
 run;
+
+/*More examples with FIND*/
+/*Syntax: FIND (master_string, search_string, <’modifiers’>,<starting_position>);*/
+data temp;
+	/*succeeds*/
+	pos_1 = find ("Sachin Tendulkar","kar");
+	/*fails - case sensitive by default*/
+	pos_2 = find ("Sachin Tendulkar","ten");
+	/*succeeds - case insensitive option*/
+	pos_3 = find ("Sachin Tendulkar","ten","i");
+	/*fails - invalid start position*/
+	pos_4 = find ("Sachin Tendulkar","kar",99);
+run;

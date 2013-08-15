@@ -7,7 +7,7 @@ Jonathan
 ;
 run;
 
-/*this gives a warning because the length needs to come earlier*/
+/*this gives a warning in the log because the length statement needs to come earlier*/
 data work.person;
 	set work.person;
 	Fullname = Name || ' FakeLastName';
