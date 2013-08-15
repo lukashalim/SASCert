@@ -1,3 +1,26 @@
+/*Chapter 1*/
+/*create data*/
+data work.person;
+   	input Name $;
+   	datalines;
+Jonathan
+;
+run;
+
+/*this gives a warning because the length needs to come earlier*/
+data work.person;
+	set work.person;
+	Fullname = Name || ' FakeLastName';
+	length fullname $ 33;
+run;
+
+/*the length statement works correctly here*/
+data work.person;
+	set work.person;
+	length fullname $ 21;
+	Fullname = Name || ' FakeLastName';
+run;
+
 /*Code Related to Chapter 2*/
 
 /*Display metadata on all tables in library, supressing details using NODS*/
@@ -217,12 +240,56 @@ run;
 /*Code Related to Chapter 7 - Creating Unique Formats*/
 libname base 'C:\Users\LukasHalim\Documents\My SAS Files\Base';
 /*if you do not use lib= or library=, the format data will be placed in work.formats*/
-proc format lib=base
- value jobfmt
+/*Format name can be up to 32 characters and may NOT end in a number*/
+/*for example, $countryfmt9 is not a valid format name*/
+/*In the value statement, must not end with a period (.)*/
+proc format;
+ value $countryfmt
+     'USA'='United States'
+	 'RUS'='Russia'
+	 'IL'='Israel';
+run;
+
+proc format;
+ value $altcountryfmt
      'USA'='United States'
 	 'RUS'='Russia'
 	 'IL'='Israel'
+	 'UK'='United Kingdom';
 run;
+
+/*examples of errors*/
+proc format;
+ value $countryfmt.
+     'USA'='United States';
+ value $countryfmt9
+ 	'USA'='United States';	
+run;
+
+/*using the data set we loaded in the chapter 6 code*/
+data base.Employee;
+	set base.Employee;
+	format country $countryfmt.;
+run;
+
+proc print data=base.employee;
+	format country $altcountryfmt.;
+run;
+
+/*Chapter 9*/
+/*This creates a single html file*/
+ods html 
+	body='C:\Users\LukasHalim\Documents\GitHub\SASCert\body.html'
+	contents='C:\Users\LukasHalim\Documents\GitHub\SASCert\contents.html'
+	frame='C:\Users\LukasHalim\Documents\GitHub\SASCert\frame.html';
+ods pdf file='C:\Users\LukasHalim\Documents\GitHub\SASCert\out.pdf';
+proc print data=base.employee;
+run;
+proc print data=base.employee;
+	format country $altcountryfmt.;
+run;
+ods _all_ close;
+ods html;
 
 /*Code for Chapter 10 - Creating and Managing Variables*/
 /*Create small dataset for use in this chapter*/
@@ -631,6 +698,25 @@ data work.ReTextPrices;
 	ReTextPrice = put(NumPrice,1.);
 run;
 
+/*Text data is automatically converted to numeric when used in a calculation*/
+data work.TextPrices;
+	set work.TextPrices;
+	AutoConverted = TextPrice * 2;
+run;
+proc print data=work.TextPrices;
+run;
+
+/*This works - testNum is converted to a string and appended to testChar*/
+/*however, testNum is put in BEST12. format, which results in leading blanks*/
+/*If we want to avoid this, we can use input to convert from numeric to character*/
+/*with the desired format*/
+data work.AutoNumToChar;
+	testChar = 'ABC';
+	testNum = 123;
+	testAutoConcat = testChar || testNum;
+	testInputConcat = testChar || ' ' || put(testNum,3.);
+run;
+
 data work.person;
    input name $ HireDate MMDDYY6.;
    datalines;
@@ -746,7 +832,26 @@ data TwoWeeks(drop=i j);
 	end;
 run;
 
-/*Chapter 16 Code*/
+/*Chapter 16 Reading Raw Data from Fixed-Fields*/
+/*If we don't specify the length in the informat, it will just do one character*/
+data work.Employee_Fixed; 
+   infile 'C:\Users\LukasHalim\Documents\GitHub\SASCert\employee_formatted.txt'; 
+   input Name $ @15 price comma.;
+run;
+proc print data=work.employee_fixed;
+run;
+
+/*Corrected*/
+/*Notice that we must have a period at the end of the informat*/
+data work.Employee_Fixed; 
+   infile 'C:\Users\LukasHalim\Documents\GitHub\SASCert\employee_formatted.txt'; 
+   input Name $13. @15 price comma7.;
+run;
+proc print data=work.employee_fixed;
+run;
+
+
+/*Chapter 17 Code*/
 /*SAS sometimes uses its own specialized vocabulary when there are*/
 /*perfectly suitable terms in common use that would be more easily*/
 /*understandable.  In this case, SAS calls the data "Free format"*/
@@ -847,7 +952,15 @@ run;
 proc print data=work.Employee_Free_Form; 
 run;
 
-/*Now we use the ampersand*/
+/*Now we use the ampersand.*/
+/*The ampersand & character is used to allow us to handle embedded blanks within a value*/
+/*when we are using blanks as our delimiter.  In order to mark the end of the an */
+/*amperanded-value, we use two blanks rather than just one.*/
+/*
+Data:
+	George Blank  23 USA 40104 4 021407
+	Sam Blank  35 UK 55125 1 031405
+*/
 data work.Employee_Free_Form; 
    	infile 'C:\Users\LukasHalim\Documents\GitHub\SASCert\emp_embedded_blanks.txt'; 
 	length Name $ 12;
@@ -865,6 +978,7 @@ proc print data=work.Employee_Free_Form;
 run;
 
 /*How about nonstandard data, such as $250,000?*/
+/*Trying to read $250,000 as numeric data results in missing values*/
 data work.Employee_Free_Form; 
    	infile 'C:\Users\LukasHalim\Documents\GitHub\SASCert\employee_nonStandard.txt'; 
 	input Name  & $12. Salary; 
@@ -934,7 +1048,31 @@ data _null_;
    put name $ age salary : comma6. HireDate MMDDYY6.;
 run;
 
-/*Chapter 18 - single input observation/row => multiple output observations/rows */
+/*Chapter 18*/
+/*If we leave out the "." at the end of the "date7", SAS will create*/
+/*an extra variable called date7.*/
+options yearcutoff=1910; 
+data work.birthdays; 
+   infile 'C:\Users\LukasHalim\Documents\GitHub\SASCert\birthdays.csv' dsd; 
+   input Name $ Birthday date7;
+run; 
+proc print data=work.birthdays; 
+   format Birthday worddate12.; 
+run;
+
+/*This time we correctly use the informat "date7"*/
+options yearcutoff=1910; 
+data work.birthdays; 
+   infile 'C:\Users\LukasHalim\Documents\GitHub\SASCert\birthdays.csv' dsd; 
+   input Name $ Birthday date7.;
+run; 
+proc print data=work.birthdays; 
+   format Birthday worddate12.; 
+run;
+
+
+
+/*Chapter 19 - single input observation/row => multiple output observations/rows */
 
 /*The double @@ prevents SAS from moving to the next row when it*/
 /*reaches the end of the data step.*/
@@ -984,4 +1122,42 @@ data work.DoBy;
 		output;
 	end;
 run;
+
+/*Chapter 21 - outputting diffrent lines in input data set to different output data sets*/
+data work.Address;
+	infile 'C:\Users\LukasHalim\Documents\GitHub\SASCert\Address.txt';
+	retain City State Zip;
+	input type 1. @;
+	if type=1 then do;
+		input Number $ Street & $15.;
+		output;
+	end;
+	if type=2 then input City $ State $ Zip;
+run;
+proc print data= work.address;
+run;
+
+/* Misc Code */
+/* PROC REPORT */
+data work.person;
+   input Name $5. +1 Num 4.;
+   datalines;
+John  3533
+Lukas 1233
+Lukas 1633
+;
+run;
+quit;
+
+/*Order to avoid printing repeat values on each line*/
+proc report data=work.person nowd;
+	define Name/order;
+	define Num/sum;
+run;
+quit;
+/*Group to aggregate observations*/
+proc report data=work.person nowd;
+	define Name/group;
+run;
+quit;
 
